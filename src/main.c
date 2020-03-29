@@ -45,6 +45,16 @@ void general_test() {
 
 int main(int argc, char const *argv[]) {
 
+  general_test();
+  general_test();
+  general_test();
+  general_test();
+  general_test();
+  general_test();
+  general_test();
+  general_test();
+  general_test();
+
   // this should always return the same freed block
   for (int i = 0; i < 1000; i++) {
     int *p = smalloc(sizeof(int) * 104);
@@ -52,9 +62,10 @@ int main(int argc, char const *argv[]) {
   }
 
   printf("Done same block testing\n");
-  print_free_list_stats();
 
   printf("Free list\n");
   print_free_list_blocks();
+  printf("Free list stats\n");
+  print_free_list_stats();
   return EXIT_SUCCESS;
 }

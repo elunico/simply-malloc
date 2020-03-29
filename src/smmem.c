@@ -56,18 +56,6 @@ void *smalloc(size_t size) {
   sblock *crawler = free_list.body.links.next;
   sblock *candidate = NULL;
 
-#ifdef FIRST_FIT
-
-  while (crawler != &free_list) {
-    if (BLOCK_SIZE(crawler) >= NSIZE(size)) {
-      candidate = crawler;
-      break;
-    }
-    crawler = crawler->body.links.next;
-  }
-
-#else
-
   size_t recordDifference = (size_t)-1;
   while (crawler != &free_list) {
     size_t blockSize = BLOCK_SIZE(crawler);
@@ -80,8 +68,6 @@ void *smalloc(size_t size) {
     }
     crawler = crawler->body.links.next;
   }
-
-#endif
 
   if (candidate == NULL) {
     size_t requiredBlockSize = NSIZE(size);
@@ -133,10 +119,12 @@ void sfree(void *ptr) {
 
   sblock *block = ptr - sizeof(sheader);
 
+  // TODO: Coalesce blocks
   block->header.header &= ((~0) - 1); // unset alloc bit
 
   relink_block(block);
 }
+
 void *srealloc(void *ptr, size_t size) {
   init_check();
   error("%s\n", "NOT IMPLEMENTED");
