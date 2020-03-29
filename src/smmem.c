@@ -1,6 +1,6 @@
-#include "budmm.h"
-#include "budprint.h"
+#include "smmem.h"
 #include "debug.h"
+#include "smprint.h"
 #include <errno.h>
 #include <unistd.h>
 

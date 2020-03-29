@@ -1,5 +1,5 @@
-#include "budmm.h"
-#include "budprint.h"
+#include "smmem.h"
+#include "smprint.h"
 #include <errno.h>
 #include <stdio.h>
 #include <string.h>
