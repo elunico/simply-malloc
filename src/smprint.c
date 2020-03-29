@@ -1,27 +1,33 @@
 #include "smprint.h"
 
 void print_free_list() {
-  sblock *start = &free_list;
+  for (int i = 0; i < NUM_FREE_LISTS; i++) {
+    sblock *start = &(free_lists[i]);
 
-  printf("prev: %lx, sentinel: %p, next: %lx\n",
-         LAST_HEXITS(free_list.body.links.prev, 5), &free_list,
-         LAST_HEXITS(free_list.body.links.next, 5));
+    printf("Free list order: %d\n", i);
+    printf("prev: %lx, sentinel: %p, next: %lx\n",
+           LAST_HEXITS(free_lists[i].body.links.prev, 5), &(free_lists[i]),
+           LAST_HEXITS(free_lists[i].body.links.next, 5));
 
-  do {
-    printf("prev: %lx, node: %p, next: %lx\n",
-           LAST_HEXITS(start->body.links.prev, 5), start,
-           LAST_HEXITS(start->body.links.next, 5));
-    start = start->body.links.next;
-  } while (start != &free_list);
+    do {
+      printf("prev: %lx, node: %p, next: %lx\n",
+             LAST_HEXITS(start->body.links.prev, 5), start,
+             LAST_HEXITS(start->body.links.next, 5));
+      start = start->body.links.next;
+    } while (start != &free_lists[i]);
+  }
 }
 
 void print_free_list_blocks() {
-  sblock *start = &free_list;
+  for (int i = 0; i < NUM_FREE_LISTS; i++) {
+    printf("Free list order: %d\n", i);
+    sblock *start = &(free_lists[i]);
 
-  do {
-    print_block(start);
-    start = start->body.links.next;
-  } while (start != &free_list);
+    do {
+      print_block(start);
+      start = start->body.links.next;
+    } while (start != &(free_lists[i]));
+  }
 }
 
 void print_block(sblock *block) {
@@ -42,25 +48,28 @@ void print_block(sblock *block) {
 
 size_t free_list_total_size() {
   size_t total = 0;
-  sblock *start = &free_list;
+  for (int i = 0; i < NUM_FREE_LISTS; i++) {
+    sblock *start = &free_lists[i];
 
-  do {
-    total += BLOCK_SIZE(start);
-    start = start->body.links.next;
-  } while (start != &free_list);
-
+    do {
+      total += BLOCK_SIZE(start);
+      start = start->body.links.next;
+    } while (start != &free_lists[i]);
+  }
   return total;
 }
 
 size_t free_list_total_count() {
   size_t total = 0;
-  sblock *start = &free_list;
+  for (int i = 0; i < NUM_FREE_LISTS; i++) {
 
-  do {
-    total++;
-    start = start->body.links.next;
-  } while (start != &free_list);
+    sblock *start = &free_lists[i];
 
+    do {
+      total++;
+      start = start->body.links.next;
+    } while (start != &free_lists[i]);
+  }
   return total;
 }
 

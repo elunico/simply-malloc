@@ -53,7 +53,6 @@ int main(int argc, char const *argv[]) {
   general_test();
   general_test();
   general_test();
-  general_test();
 
   // this should always return the same freed block
   for (int i = 0; i < 1000; i++) {

@@ -41,7 +41,13 @@ typedef struct sblock {
   } body;
 } sblock;
 
-extern sblock free_list;
+/*
+ * Free lists should contain blocks of size 2^6, 2^7, 2^8...2^14 (pagesize),
+ * 2^14+ This requires 10 free lists
+ */
+
+#define NUM_FREE_LISTS 10
+extern sblock free_lists[NUM_FREE_LISTS];
 
 void *smalloc(size_t size);
 void sfree(void *ptr);
