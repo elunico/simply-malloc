@@ -61,42 +61,41 @@ void relink_block(sblock *block) {
   block->body.links.next->body.links.prev = block;
 }
 
-void fill_free_header(sblock *block_start) {
-  block_start->header.header &= ~0xf;
-  block_start->header.header |= (0x5 < 1);
+void fill_free_header(sblock *block) {
+  block->header.header &= ~0xf;
+  block->header.header |= (0x5 < 1);
+  block->header.header &= ((~0) - 1);
 }
 
-void fill_alloc_header(sblock *block_start) {
-  block_start->header.header &= ~0xf;
-  block_start->header.header |= (0x5 < 1);
-  block_start->header.header |= 1;
+void fill_alloc_header(sblock *block) {
+  block->header.header &= ~0xf;
+  block->header.header |= (0x5 < 1);
+  block->header.header |= 1;
 }
 
-void split_to_fit_block(size_t reqSize, sblock *candidate) {
+void block_split_to_size(size_t size, sblock *block) {
   // smallest legal size is 64 bytes. 128 can be split to 64 x 2 hence
-  // BLOCK_SIZE(candidate) >= 128
-  while (BLOCK_SIZE(candidate) >= 2 * NSIZE(reqSize) &&
-         BLOCK_SIZE(candidate) >= 128) {
-
-    size_t blockSize = BLOCK_SIZE(candidate);
-    void *half = ((void *)candidate) + (blockSize / 2);
-    setblocksize(candidate, blockSize / 2);
+  // BLOCK_SIZE(block) >= 128
+  while (BLOCK_SIZE(block) >= (2 * size) && BLOCK_SIZE(block) >= 128) {
+    size_t blockSize = BLOCK_SIZE(block);
+    void *half = ((void *)block) + (blockSize / 2);
+    setblocksize(block, blockSize / 2);
     setblocksize(half, blockSize / 2);
     fill_free_header(half);
     relink_block(half);
   }
 }
 
-int accumulate_system_memory(size_t requiredBlockSize, size_t *accumulated,
-                             sblock **start) {
-  *start = sbrk(0);
-  if (*start == NULL) {
+int accumulate_system_memory(size_t minBytes, size_t *accumulated,
+                             void **memStart) {
+  *memStart = sbrk(0);
+  if (*memStart == NULL) {
     errno = ENOMEM;
     return -1;
   }
 
   size_t acc = 0;
-  while (acc < requiredBlockSize) {
+  while (acc < minBytes) {
     void *nextBlock = sbrk(getpagesize());
     if (nextBlock == NULL) {
       errno = ENOMEM;
@@ -108,7 +107,7 @@ int accumulate_system_memory(size_t requiredBlockSize, size_t *accumulated,
   return 0;
 }
 
-sblock *search_free_list(int startIndex, size_t reqSize) {
+sblock *search_free_list(int startIndex, size_t minBlockSize) {
   int listIndex = -1;
   sblock *candidate = NULL;
   size_t recordDifference = (size_t)-1;
@@ -118,7 +117,7 @@ sblock *search_free_list(int startIndex, size_t reqSize) {
 
     while (crawler != &free_lists[i]) {
       size_t blockSize = BLOCK_SIZE(crawler);
-      size_t nsize = NSIZE(reqSize);
+      size_t nsize = minBlockSize;
       if (blockSize >= nsize) {
         if (blockSize - nsize < recordDifference) {
           recordDifference = blockSize - nsize;
@@ -134,19 +133,22 @@ sblock *search_free_list(int startIndex, size_t reqSize) {
 
 void *smalloc(size_t size) {
   init_check();
+
   if (size <= 0) {
     errno = EINVAL;
     return NULL;
   }
 
-  int startIndex = free_list_idx(NSIZE(size));
-  sblock *candidate = search_free_list(startIndex, size);
+  size_t requiredBlockSize = NSIZE(size);
+
+  int startIndex = free_list_idx(requiredBlockSize);
+  sblock *candidate = search_free_list(startIndex, requiredBlockSize);
 
   if (candidate == NULL) {
-    size_t rSize = NSIZE(size);
     size_t accumulated;
 
-    int result = accumulate_system_memory(rSize, &accumulated, &candidate);
+    int result = accumulate_system_memory(requiredBlockSize, &accumulated,
+                                          (void **)&candidate);
     if (result == -1) {
       errno = ENOMEM;
       return NULL;
@@ -159,7 +161,7 @@ void *smalloc(size_t size) {
     unlink_block(candidate);
   }
 
-  split_to_fit_block(size, candidate);
+  block_split_to_size(requiredBlockSize, candidate);
 
   fill_alloc_header(candidate);
 
