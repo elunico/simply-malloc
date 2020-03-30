@@ -109,7 +109,6 @@ int accumulate_system_memory(size_t minBytes, size_t *accumulated,
 }
 
 sblock *search_free_list(int startIndex, size_t minBlockSize) {
-  int listIndex = -1;
   sblock *candidate = NULL;
   size_t recordDifference = (size_t)-1;
 
@@ -123,7 +122,6 @@ sblock *search_free_list(int startIndex, size_t minBlockSize) {
         if (blockSize - nsize < recordDifference) {
           recordDifference = blockSize - nsize;
           candidate = crawler;
-          listIndex = i;
         }
       }
       crawler = crawler->body.links.next;
@@ -135,10 +133,8 @@ sblock *search_free_list(int startIndex, size_t minBlockSize) {
 void walk_coalesce_free() {
   sblock *walker = heap_start;
   void *heap_end = sbrk(0);
-  int c = 0;
   while ((((void *)walker) + BLOCK_SIZE(walker)) < heap_end) {
     sblock *nextBlock = ((void *)walker) + BLOCK_SIZE(walker);
-    // FIXME: segfaulting for some reason
     if (IS_FREE(walker) && IS_FREE(nextBlock)) {
       size_t newSize = BLOCK_SIZE(walker) + BLOCK_SIZE(nextBlock);
       unlink_block(nextBlock);
@@ -149,7 +145,6 @@ void walk_coalesce_free() {
     } else {
       walker = nextBlock;
     }
-    c++;
   }
 }
 
