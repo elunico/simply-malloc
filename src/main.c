@@ -10,7 +10,11 @@ void general_test() {
   char *ptr0 = (char *)smalloc(3);
   char *ptr1 = (char *)smalloc(10);
 
-  printf("ptr0: %p, ptr1: %p\n", ptr0, ptr1);
+  // FIXME: you cannot call library / external functions that call malloc, sbrk,
+  // mmap etc. while using smalloc if you want coalescing enabled. Calling those
+  // functions messes with the break pointer making it impossible to walk the
+  // heap the reliably
+  // printf("ptr0: %p, ptr1: %p\n", ptr0, ptr1);
 
   ptr1[0] = 'a';
   ptr1[1] = 'b';
@@ -19,7 +23,7 @@ void general_test() {
   ptr1[4] = 'e';
   ptr1[5] = 'f';
   ptr1[6] = '\0';
-  printf("ptr1 string: %s\n", ptr1);
+  // printf("ptr1 string: %s\n", ptr1);
 
   sfree(ptr0);
   sfree(ptr1);
@@ -29,7 +33,7 @@ void general_test() {
     ptr2[i] = i;
 
   void *ptr3 = smalloc(3000);
-  printf("ptr3: %p\n", ptr3);
+  // printf("ptr3: %p\n", ptr3);
 
   sfree(ptr2);
   sfree(ptr3);
@@ -46,21 +50,21 @@ void general_test() {
 int main(int argc, char const *argv[]) {
 
   general_test();
-  general_test();
-  general_test();
-  general_test();
-  general_test();
-  general_test();
-  general_test();
-  general_test();
+  // general_test();
+  // general_test();
+  // general_test();
+  // general_test();
+  // general_test();
+  // general_test();
+  // general_test();
 
-  // this should always return the same freed block
+  // // this should always return the same freed block
   for (int i = 0; i < 1000; i++) {
     int *p = smalloc(sizeof(int) * 104);
     sfree(p);
   }
 
-  printf("Done same block testing\n");
+  // printf("Done same block testing\n");
 
   printf("Free list\n");
   print_free_list_blocks();

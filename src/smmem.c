@@ -32,6 +32,7 @@ static int bud_isInitialized = 0;
 
 static inline void init_check() {
   if (!bud_isInitialized) {
+    heap_start = sbrk(0);
     for (int i = 0; i < NUM_FREE_LISTS; i++) {
       free_lists[i].body.links.next = &free_lists[i];
       free_lists[i].body.links.prev = &free_lists[i];
@@ -131,6 +132,27 @@ sblock *search_free_list(int startIndex, size_t minBlockSize) {
   return candidate;
 }
 
+void walk_coalesce_free() {
+  sblock *walker = heap_start;
+  void *heap_end = sbrk(0);
+  int c = 0;
+  while ((((void *)walker) + BLOCK_SIZE(walker)) < heap_end) {
+    sblock *nextBlock = ((void *)walker) + BLOCK_SIZE(walker);
+    // FIXME: segfaulting for some reason
+    if (IS_FREE(walker) && IS_FREE(nextBlock)) {
+      size_t newSize = BLOCK_SIZE(walker) + BLOCK_SIZE(nextBlock);
+      unlink_block(nextBlock);
+      unlink_block(walker); // segregated free lists, needs to change index
+      fill_free_header(walker);
+      setblocksize(walker, newSize);
+      relink_block(walker);
+    } else {
+      walker = nextBlock;
+    }
+    c++;
+  }
+}
+
 void *smalloc(size_t size) {
   init_check();
 
@@ -177,10 +199,22 @@ void sfree(void *ptr) {
 
   sblock *block = ptr - sizeof(sheader);
 
-  // TODO: Coalesce blocks
   UNSET_ALLOC_BIT(block);
 
   relink_block(block);
+
+#ifdef UNSAFE_COALESCE
+  // coalesce blocks by walking the heap 😬
+  // probably want to add a footer or something
+  //
+  // enabling this option means you cannot call any functions that mess with the
+  // break pointer or call malloc if you slot smalloc into malloc's position
+  // forcing everything to use smalloc this is ok because only smalloc will
+  // change the break pointer and manage the free blocks, but if malloc and
+  // smalloc live together, you cannot call malloc or sbrk &c. while using
+  // coalescing
+  walk_coalesce_free();
+#endif
 }
 
 void *srealloc(void *ptr, size_t size) {

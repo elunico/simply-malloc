@@ -35,7 +35,7 @@ void print_block(sblock *block) {
     printf("=+");
   printf("\n");
   printf("|Block at: %p\n", block);
-  printf("| size: %lu | magic: %x (ok? %d) | alloc: %d |\n", BLOCK_SIZE(block),
+  printf("| size: %lu | magic: %lx (ok? %d) | alloc: %d |\n", BLOCK_SIZE(block),
          MAGIC_GET(block), MAGIC_CHECK(block), IS_ALLOC(block));
   if (IS_FREE(block)) {
     printf("| prev: %p | next: %p |\n", block->body.links.prev,
@@ -70,7 +70,7 @@ size_t free_list_total_count() {
       start = start->body.links.next;
     } while (start != &free_lists[i]);
   }
-  return total;
+  return total - NUM_FREE_LISTS; // every sentinel is counted once
 }
 
 void print_free_list_stats() {

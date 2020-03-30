@@ -7,7 +7,7 @@
 // header needs to be 32 bytes for alignment
 typedef struct sheader {
   size_t header;   //  8
-  size_t padding1; // 16
+  void *prev_addr; // 16
   size_t padding2; // 24
   size_t padding3; // 32
 } __attribute__((packed)) sheader;
@@ -16,8 +16,8 @@ typedef struct sheader {
 #define IS_ALLOC(block) ((((block)->header.header) & 1) == 1)
 #define IS_FREE(block) ((((block)->header.header) & 1) == 0)
 #define BLOCK_SIZE(block) (((block)->header.header) & (~0xf))
-#define MAGIC_CHECK(block) (((((block)->header.header) & 0xf) > 1) == 0x5)
-#define MAGIC_GET(block) ((((block)->header.header) & 0xf) > 1)
+#define MAGIC_CHECK(block) (((((block)->header.header) & 0xf)) == 0x5)
+#define MAGIC_GET(block) ((((block)->header.header) & 0xf))
 
 #define NSIZE(size) ((size) + sizeof(sheader))
 #define LAST_HEXITS(n, amt) (((size_t)n) & ((1 << ((amt + 1) * 4)) - 1))
@@ -49,6 +49,7 @@ typedef struct sblock {
 
 #define NUM_FREE_LISTS 10
 extern sblock free_lists[NUM_FREE_LISTS];
+void *heap_start;
 
 void *smalloc(size_t size);
 void sfree(void *ptr);
