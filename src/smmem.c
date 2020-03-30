@@ -64,7 +64,7 @@ void relink_block(sblock *block) {
 void fill_free_header(sblock *block) {
   block->header.header &= ~0xf;
   block->header.header |= (0x5 < 1);
-  block->header.header &= ((~0) - 1);
+  UNSET_ALLOC_BIT(block);
 }
 
 void fill_alloc_header(sblock *block) {
@@ -178,7 +178,7 @@ void sfree(void *ptr) {
   sblock *block = ptr - sizeof(sheader);
 
   // TODO: Coalesce blocks
-  block->header.header &= ((~0) - 1); // unset alloc bit
+  UNSET_ALLOC_BIT(block);
 
   relink_block(block);
 }

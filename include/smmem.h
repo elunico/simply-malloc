@@ -12,6 +12,7 @@ typedef struct sheader {
   size_t padding3; // 32
 } __attribute__((packed)) sheader;
 
+#define UNSET_ALLOC_BIT(block) (((block)->header.header) &= ((~0) - 1))
 #define IS_ALLOC(block) ((((block)->header.header) & 1) == 1)
 #define IS_FREE(block) ((((block)->header.header) & 1) == 0)
 #define BLOCK_SIZE(block) (((block)->header.header) & (~0xf))
