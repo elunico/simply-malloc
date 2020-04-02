@@ -2,6 +2,7 @@
 #include "debug.h"
 #include "smprint.h"
 #include <errno.h>
+#include <string.h>
 #include <unistd.h>
 
 int free_list_idx(size_t blockSize) {
@@ -185,6 +186,15 @@ void *smalloc(size_t size) {
   return &candidate->body.payload;
 }
 
+void *calloc(size_t nmemb, size_t size) {
+  void *ptr = malloc(size * nmemb);
+  if (ptr == NULL) {
+    return ptr;
+  }
+  memset(ptr, 0, size * nmemb);
+  return ptr;
+}
+
 void sfree(void *ptr) {
   init_check();
 
@@ -214,7 +224,52 @@ void sfree(void *ptr) {
 
 void *srealloc(void *ptr, size_t size) {
   init_check();
-  error("%s\n", "NOT IMPLEMENTED");
+
+  if (size == 0) {
+    sfree(ptr);
+    return NULL;
+  }
+
+  if (ptr == NULL) {
+    return smalloc(size);
+  }
+
+  sblock *block = ptr - sizeof(sheader);
+  size_t blockSize = BLOCK_SIZE(block);
+  if (blockSize < 2 * NSIZE(size) && blockSize > NSIZE(size)) {
+    // if the request is to grow or shrink the region but it still
+    // fits in a block without the need for splitting, we just return the block
+    // example would be malloc(10) then realloc(ptr, 20) since the header is 32
+    // and the min block size is 64 this results in sizes of 42 and 52 both of
+    // which fit in a 64 byte block
+
+    return ptr;
+  }
+
+  if (blockSize >= 2 * NSIZE(size)) {
+    // if the new size is sufficiently small we will split the current block.
+    // The split function always preserves the given block and splits at the
+    // middle, freeing the higher address and repeating on the remaining block
+    // until it is too small to be split either because it needs to contain size
+    // bytes or is 64 bytes
+    block_split_to_size(NSIZE(size), block);
+    return ptr;
+  }
+
+  if (blockSize < NSIZE(size)) {
+    // in this case we must realloc and copy and free since there is not enough
+    // room for the requested number of bytes in the given block
+    void *newMemory = smalloc(size);
+    // copy entire block because we do not know actual payload size
+    // do not copy the header though only the payload
+    memcpy(newMemory, ptr, size);
+    sfree(ptr);
+    return newMemory;
+  }
+
+  // if a case is not handled we should probably figure out why
+  error("realloc case not hanlded! blockSize: %lu, size: %lu\n", blockSize,
+        size);
   abort();
   return NULL;
 }

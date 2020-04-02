@@ -1,5 +1,6 @@
 #include "smmem.h"
 #include "smprint.h"
+#include <assert.h>
 #include <errno.h>
 #include <stdio.h>
 #include <string.h>
@@ -47,22 +48,39 @@ void general_test() {
   // print_free_list_blocks();
 }
 
+void realloc_test() {
+  char *start = smalloc(10);
+
+  for (int i = 0; i < 10; i++) {
+    start[i] = (char)('a' + i);
+  }
+  start[9] = (char)0;
+
+  char *next = srealloc(start, 20);
+  assert(start == next);
+  for (int i = 0; i < 20; i++) {
+    next[i] = (char)('a' + i);
+  }
+  next[19] = (char)0;
+  // FIXME: if you call free with some unfreed block you get a segfault so..
+  // thats a problem
+  // pretty sure that this is a walk_coalesce_free() issue
+  // see issue #1
+
+  // sfree(next);
+}
+
 int main(int argc, char const *argv[]) {
 
-  general_test();
-  // general_test();
-  // general_test();
-  // general_test();
-  // general_test();
-  // general_test();
-  // general_test();
-  // general_test();
+  realloc_test();
 
-  // // this should always return the same freed block
-  for (int i = 0; i < 1000; i++) {
-    int *p = smalloc(sizeof(int) * 104);
-    sfree(p);
-  }
+  general_test();
+
+  // // // this should always return the same freed block
+  // for (int i = 0; i < 1000; i++) {
+  //   int *p = smalloc(sizeof(int) * 104);
+  //   sfree(p);
+  // }
 
   // printf("Done same block testing\n");
 
