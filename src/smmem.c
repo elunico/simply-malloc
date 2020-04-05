@@ -253,6 +253,7 @@ void *srealloc(void *ptr, size_t size) {
     // until it is too small to be split either because it needs to contain size
     // bytes or is 64 bytes
     block_split_to_size(NSIZE(size), block);
+    // TODO: coalesce after splitting?
     return ptr;
   }
 
